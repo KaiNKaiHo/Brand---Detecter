@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[86]:
+# Thư viện dùng
+
+# In[6]:
 
 
 from PIL import Image, ImageDraw, ImageFilter
@@ -15,68 +17,30 @@ import matplotlib.pyplot as plt
 get_ipython().run_line_magic('matplotlib', 'inline')
 
 
-# In[87]:
+# Biến toàn cục
+
+# In[7]:
 
 
-path_background = "D:/Cuong/download/pasteImg/rocket.jpg"
-path_logo = "D:/Cuong/download/pasteImg/lena.jpg"
-background = Image.open(path_background, 'r')
-logo = Image.open(path_logo, 'r')
-labeldir = 'label.txt'
-newlabeldir = 'newlabel.txt'
-
-
-# In[88]:
-
-
-def create_train_example(background : Image, logo : Image , labeldir : string, newlabeldir : string, path_logo : string):
-    """
-    Chèn logo vào ảnh
-    Param
-    ----------------
-    - traindir: đường dẫn đến folder để tạo ảnh 
-    - background: ảnh background
-    - logo: ảnh logo cần chèn
-    - labeldir: đường dẫn đến folder để tạo label
-    Return
-    ----------------
-    - Tọa độ của logo
-    """
-    temp_background = background.copy()
-    
-    bg_height,bg_width = temp_background.size
-    logo_height,logo_width = logo.size
-    
-    print(str(bg_height) + " " + str(bg_width) + " " + str(logo_height) + " " + str(logo_width))
-    
-    #Only paste when Logo smaller than background
-    if (logo_height < bg_height) and (logo_width < bg_width):
-        x = random.randint(0, logo_width)
-        y = random.randint(0, logo_height)
-        temp_background.paste(logo, (x,y))
-        temp_background.save("geeks.jpg", quality=95)
-    else:
-        return "Errol"
-    #Paste logo above background 
-    
+def genLogo(background : Image, logo : Image , traindir : string, x : int, y : int, name_file : int) :
     '''
-    Save new picture LogoReg:
-    ----------------
+    Gen ảnh:
+    ---------
     Param:
-    - name_new_picture : ten anh moi
+    - background, logo: ảnh để Ren
+    - traindir: folder để save ảnh Ren
+    - x, y: tọa độ đặt ảnh logo ngẫu nhiên trên background
+    - name_file: tên ảnh (đánh số từ 0 đến n)
     '''
-    name_file = os.path.basename(path_logo)
-    name_new_picture =  str(name_file)
-    temp_background.save(name_new_picture)
-    new_label(x, y, labeldir, newlabeldir, name_file)
-    
-    
+    gen_logo = background.copy()
+    gen_logo.paste(logo, (x,y))
+    gen_logo.save(traindir + "/" + str(name_file) +  ".jpg", quality = 95) #Lưu vào ảnh có path: 'traindir/{name_file}.jpg'
 
 
-# In[89]:
+# In[8]:
 
 
-def new_label(x : int, y: int, labeldir : string,  newlabeldir: string, name_file : string):
+def new_label(x : int, y: int, logo_height : int, logo_width : int, newlabel: string, name_file : string, brand : string):
     '''
     Gan label + ghi vao tep txt
     -------------------------
@@ -88,56 +52,107 @@ def new_label(x : int, y: int, labeldir : string,  newlabeldir: string, name_fil
     Output:
     - write (name_picture, brand_picture, label_number, x_min, y_min, x_max, y_max) to laberdir 
     '''
-    name_picture = ""
-    brand_picture = ""
-    label_number = 0
-    x_min = 0
-    y_min = 0
-    x_max = 0
-    y_max = 0
-    #Read original babel txt to extract 
-    with open(labeldir, 'r') as f:
-        lines = f.readlines()
+    picture_name = brand + "_" + str(name_file) + ".jpg"
+    picture_brand = brand
+    x_min = x
+    y_min = y
+    x_max = logo_height + x
+    y_max = logo_width + y
     
-        for line in lines:
-            #Doc du lieu tu original_label trung ten anh Logo
-            if line.split(' ')[0] == name_file: 
-                name_picture = line.split(' ')[0]
-                brand_picture = line.split(' ')[1]
-                label_number = line.split(' ')[2]
-                x_min = int(line.split(' ')[3])
-                y_min = int(line.split(' ')[4])
-                x_max = int(line.split(' ')[5])
-                y_max = int(line.split(' ')[6])
-                
-                x_min += x
-                y_min += y
-                x_max += x
-                y_max += y
-                
-        f.close()
-    #Thay doi toa do cua Logo sau khi paste
-    with open(newlabeldir,'w') as file_w:   
-        l = name_picture + " " + brand_picture + " " + str(label_number) + " " + str(x_min) + " " + str(y_min) + " " + str(x_max) + " " + str(y_max) + "\n"
+    with open(newlabel,'a') as file_w:   
+        l = picture_name + " " + picture_brand  + " " + str(x_min) + " " + str(y_min) + " " + str(x_max) + " " + str(y_max) + "\n"
         '''
-        Ex: Highland.png    Highland    label_number    x_min   y_min   x_max   y_max 
+        Ex: 0.png    Highland    x_min   y_min   x_max   y_max 
         '''
-        file_w.writelines([l])           
+        file_w.write(l)           
         file_w.close()
-    #Write to labeldir 
-     
 
 
-# In[90]:
+# In[9]:
 
 
-create_train_example(background, logo, labeldir, newlabeldir, path_logo)
+def create_train_example(background : Image, logo : Image , traindir : string, newlabel : string, brand : string, name_file : int):
+    """
+    Chèn logo vào ảnh
+    Params
+    ----------------
+    - traindir: đường dẫn đến folder để tạo ảnh 
+    - background: ảnh background
+    - logo: ảnh logo cần chèn
+    - newlable: đường dẫn đến folder để tạo label
+    - name_file: ten ảnh
+    - brand: tên brand
+    """
+    
+    bg_height,bg_width = background.size
+    logo_height,logo_width = logo.size
+    #Only paste when Logo smaller than background
+    if (logo_height < bg_height) and (logo_width < bg_width):
+        y = random.randint(0, bg_width - logo_width)
+        x = random.randint(0, bg_height - logo_height)
+        
+        genLogo(background, logo, traindir, x, y, name_file)
+        new_label(x, y, logo_height, logo_width, newlabel, name_file, brand)
+    else:
+        print("Logo bigger than background")
 
 
-# In[68]:
+# In[10]:
+
+
+def readBackGround(DIRECTORY : string): #, CATEGORIES : list):
+    
+    list_path_background = []
+    #for category in CATEGORIES: #Xét từng folder
+    path = os.path.join(DIRECTORY, category) #Get path from folder
+    for img in os.listdir(path): #Get each of img from folder
+        path_background = os.path.join(path, img) #Get img path
+        list_path_background.append(path_background)
+    return list_path_background
+
+
+# In[11]:
+
+
+def main():
+    DIRECTORY = r'<background_path_file>' #Get the path
+    #CATEGORIES = ['cats','dogs'] #Name the folder 
+    list_path_background = readBackGround(DIRECTORY ) #, CATEGORIES)
+    path_logo = r'<logo_path>'
+    brand = "HighLand"
+    traindir = '<where you want to save GenLogo>'
+    newlabel = "<Label.txt>"
+    name_file = 0
+    
+    for path_background in list_path_background:
+        background = Image.open(path_background, 'r')
+        logo = Image.open(path_logo, 'r')
+        create_train_example(background, logo, traindir, newlabel, brand, name_file)
+        name_file += 1
+
+
+# In[12]:
+
+
+main()
+
+
+# In[ ]:
+
+
+
+
+
+# In[13]:
 
 
 logo.size
+
+
+# In[14]:
+
+
+background.size
 
 
 # In[ ]:
